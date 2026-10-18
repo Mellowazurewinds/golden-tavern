@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f6f2e9">
+    <meta name="description" content="Find a little inspiration for whatever is in your kitchen with Golden Tavern.">
+    <title>Golden Tavern — good food, found simply</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Golden Tavern home">
+        <span class="brand-mark" aria-hidden="true">✳</span>
+        <span>golden tavern</span>
+      </a>
+      <span class="top-note">A good meal starts somewhere.</span>
+      <a class="top-link" href="#discover">Find your next favourite <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span></span> YOUR TABLE, YOUR WAY</p>
+          <h1 id="hero-title">Good food.<br><em>Found simply.</em></h1>
+          <p class="hero-description">A little inspiration for whatever’s in your kitchen. Find something lovely to make tonight.</p>
+          <a class="text-link" href="#discover">Let’s find a recipe <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="sun"></div>
+          <div class="art-leaf leaf-one"></div>
+          <div class="art-leaf leaf-two"></div>
+          <div class="plate"><div class="plate-inner"><div class="food-food"></div><i class="garnish garnish-one"></i><i class="garnish garnish-two"></i><i class="garnish garnish-three"></i></div></div>
+          <div class="art-caption">made with a little<br>bit of curiosity</div>
+          <span class="art-spark spark-one">✳</span><span class="art-spark spark-two">✳</span>
+        </div>
+        <div class="hero-footnote"><span>01 / 03</span><span>GOOD THINGS ARE COOKING</span></div>
+      </section>
+
+      <section class="discover" id="discover" aria-labelledby="discover-title">
+        <div class="section-heading">
+          <div><p class="eyebrow"><span></span> THE DAILY SPECIAL</p><h2 id="discover-title">What sounds good?</h2></div>
+          <p class="section-aside">Follow a craving, or let<br>the kitchen surprise you.</p>
+        </div>
+        <form class="search-form" id="search-form">
+          <label class="search-box" for="search-input"><span aria-hidden="true">⌕</span><input id="search-input" name="q" type="search" placeholder="Try “crispy potatoes” or an ingredient…” autocomplete="off"><button class="clear-button" type="button" aria-label="Clear search" hidden>×</button></label>
+          <button class="search-button" type="submit">Find recipes <span aria-hidden="true">↗</span></button>
+        </form>
+        <div class="browse-row"><span class="browse-label">A place to start</span><div class="chips"><button class="chip" type="button" data-category="Chicken">Chicken</button><button class="chip" type="button" data-query="pasta">Pasta</button><button class="chip" type="button" data-category="Vegetarian">Vegetarian</button><button class="chip" type="button" data-category="Seafood">Seafood</button></div><button class="surprise-button" id="surprise-button" type="button"><span aria-hidden="true">✳</span> Surprise me</button></div>
+        <div class="results-heading"><h3 id="results-title">A little inspiration</h3><span id="results-count" class="results-count"></span></div>
+        <div class="status-message" id="status-message" role="status" aria-live="polite">Finding something lovely…</div>
+        <div class="recipe-grid" id="recipe-grid"></div>
+      </section>
+    </main>
+
+    <footer class="footer"><a class="brand" href="/"><span class="brand-mark" aria-hidden="true">✳</span><span>golden tavern</span></a><p>For the joy of figuring out what’s for dinner.</p><span class="footer-credit">Recipes via TheMealDB</span></footer>
+
+    <dialog class="recipe-dialog" id="recipe-dialog" aria-labelledby="dialog-title"><button class="dialog-close" id="dialog-close" type="button" aria-label="Close recipe">×</button><div id="dialog-content"></div></dialog>
+  </body>
+</html>
