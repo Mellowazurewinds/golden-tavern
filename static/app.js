@@ -49,7 +49,7 @@ async function loadMeals(query, { random = false, category = "" } = {}) {
       resultsCount.textContent = "";
       return;
     }
-    renderMeals(meals.slice(0, 8), random ? "Tonight’s little surprise" : category || (query ? `Good things with ${query}` : "A little inspiration"));
+    renderMeals(meals.slice(0, 24), random ? "Tonight’s little surprise" : category || (query ? `Good things with ${query}` : "A little inspiration"));
   } catch (error) {
     status.textContent = error.message || "We couldn’t reach the recipe box. Please try again.";
     status.hidden = false;
@@ -108,3 +108,4 @@ document.querySelector("#dialog-close").addEventListener("click", () => dialog.c
 dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
 
 loadMeals("chicken");
+
