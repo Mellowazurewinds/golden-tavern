@@ -108,3 +108,4 @@ document.querySelector("#dialog-close").addEventListener("click", () => dialog.c
 dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
 
 loadMeals("chicken");
+
