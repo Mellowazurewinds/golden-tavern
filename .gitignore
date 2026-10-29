@@ -153,6 +153,17 @@ activemq-data/
 .env
 .envrc
 .venv
+.runtime/
+.builddeps/
+.tmp/
+.build/
+.wrangler/
+public/
+GoldenTavern.exe
+python_modules/
+.venv-workers/
+pylock.toml
+uv.lock
 env/
 venv/
 ENV/
