@@ -4,13 +4,20 @@ from __future__ import annotations
 
 import json
 import re
-from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
 from flask import Flask, jsonify, render_template, request
+
+try:
+    # Cloudflare Workers provides Fetch instead of regular outbound sockets.
+    from pyodide.ffi import run_sync
+    from workers import fetch as worker_fetch
+except ImportError:
+    run_sync = None
+    worker_fetch = None
 
 app = Flask(__name__)
 
@@ -20,6 +27,18 @@ MEALDB_URL = "https://www.themealdb.com/api/json/v1/1/"
 def mealdb(path: str, **params: str) -> dict:
     """Fetch a JSON response from TheMealDB with a short timeout."""
     url = f"{MEALDB_URL}{path}?{urlencode(params)}"
+    if worker_fetch is not None:
+        try:
+            response = run_sync(worker_fetch(url))
+            if not response.ok:
+                raise RuntimeError(f"TheMealDB returned HTTP {response.status}.")
+            payload = run_sync(response.json())
+            return payload.to_py() if hasattr(payload, "to_py") else payload
+        except RuntimeError:
+            raise
+        except Exception as exc:
+            app.logger.warning("TheMealDB Worker request failed: %s", exc)
+            raise RuntimeError("Recipe service is unavailable right now. Please try again in a moment.") from exc
     try:
         with urlopen(url, timeout=8) as response:
             return json.loads(response.read().decode("utf-8"))
@@ -87,11 +106,10 @@ def search_meals():
 
             # Require a recipe to appear in every ingredient filter result.
             # This prevents unrelated matches for searches like "chicken chocolate".
-            with ThreadPoolExecutor(max_workers=len(ingredients)) as pool:
-                results_by_ingredient = list(pool.map(
-                    lambda ingredient: mealdb("filter.php", i=ingredient.replace(" ", "_")).get("meals") or [],
-                    ingredients,
-                ))
+            results_by_ingredient = [
+                mealdb("filter.php", i=ingredient.replace(" ", "_")).get("meals") or []
+                for ingredient in ingredients
+            ]
 
             common_ids = {meal["idMeal"] for meal in results_by_ingredient[0]}
             for ingredient_meals in results_by_ingredient[1:]:
@@ -139,5 +157,10 @@ def meal_details(meal_id: str):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import threading
+    import webbrowser
 
+    url = "http://127.0.0.1:5000"
+    threading.Timer(0.8, webbrowser.open, args=(url,)).start()
+    print(f"Golden Tavern is running at {url}. Close this window to stop it.")
+    app.run(host="127.0.0.1", port=5000, debug=False)
