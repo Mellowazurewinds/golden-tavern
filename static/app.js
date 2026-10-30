@@ -57,13 +57,51 @@ async function loadMeals(query, { random = false, category = "" } = {}) {
   }
 }
 
-function ingredientsFor(meal) {
+function recipeIngredients(meal) {
   return Array.from({ length: 20 }, (_, index) => {
     const number = index + 1;
-    const ingredient = meal[`strIngredient${number}`]?.trim();
+    const name = meal[`strIngredient${number}`]?.trim();
     const measure = meal[`strMeasure${number}`]?.trim();
-    return ingredient ? `<li><span>${escapeHtml(ingredient)}</span><span>${escapeHtml(measure)}</span></li>` : "";
-  }).filter(Boolean).join("");
+    return name ? { name, measure: measure || "" } : null;
+  }).filter(Boolean);
+}
+
+function ingredientsFor(ingredients) {
+  return ingredients.map(({ name, measure }) => `
+    <li><span>${escapeHtml(name)}</span><span>${escapeHtml(measure)}</span></li>
+  `).join("");
+}
+
+function cleanInstructionText(text) {
+  return String(text || "")
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/&nbsp;/gi, " ");
+}
+
+function recipeSteps(instructionText) {
+  const paragraphs = cleanInstructionText(instructionText)
+    .replace(/(^|\s)step\s*\d+\s*[:.)-]?\s+/gi, "\n")
+    .replace(/(^|\s)\d+\s*[.)]\s+/g, "\n")
+    .split(/\r?\n+/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter((line) => line && !/^(?:step\s*)?\d+\s*[:.)-]?$/i.test(line))
+    .filter(Boolean);
+
+  // Very long source paragraphs are easier to follow when separated at sentence boundaries.
+  // Keep shorter paragraphs intact and preserve the source wording and order.
+  if (paragraphs.length === 1 && paragraphs[0].length > 360 && typeof Intl.Segmenter === "function") {
+    const sentences = Array.from(new Intl.Segmenter(undefined, { granularity: "sentence" }).segment(paragraphs[0]), ({ segment }) => segment.trim()).filter(Boolean);
+    if (sentences.length > 1) return sentences;
+  }
+  return paragraphs;
+}
+
+function mealSourceUrl(meal) {
+  try {
+    const source = new URL(meal.strSource || "");
+    if (["http:", "https:"].includes(source.protocol)) return source.href;
+  } catch {}
+  return `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${encodeURIComponent(meal.idMeal)}`;
 }
 
 async function openRecipe(id) {
@@ -73,13 +111,18 @@ async function openRecipe(id) {
     const response = await fetch(`/api/meals/${encodeURIComponent(id)}`);
     const meal = await response.json();
     if (!response.ok) throw new Error(meal.error || "Recipe could not be opened.");
-    const steps = (meal.strInstructions || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    // Keep the ingredient list and directions paired from this single full-meal source response.
+    const ingredients = recipeIngredients(meal);
+    const instructions = meal.strInstructions || "";
+    const steps = recipeSteps(instructions);
+    const originalSourceAvailable = /^https?:\/\//i.test(meal.strSource || "");
     dialogContent.innerHTML = `
       <img class="dialog-image" src="${escapeHtml(meal.strMealThumb)}" alt="${escapeHtml(meal.strMeal)}">
       <div class="dialog-body"><p class="eyebrow"><span></span> ${escapeHtml(meal.strArea || "FROM THE RECIPE BOX")} · ${escapeHtml(meal.strCategory || "GOOD FOOD")}</p>
       <h2 id="dialog-title">${escapeHtml(meal.strMeal)}</h2>
-      <div class="detail-columns"><section><h3>What you’ll need</h3><ul class="ingredient-list">${ingredientsFor(meal)}</ul></section><section><h3>Let’s make it</h3><ol class="step-list">${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section></div>
-      ${meal.strSource ? `<a class="source-link" href="${escapeHtml(meal.strSource)}" target="_blank" rel="noreferrer">Original recipe <span aria-hidden="true">↗</span></a>` : ""}</div>`;
+      <p class="recipe-attribution">Ingredients and directions come from the same TheMealDB entry, with the wording kept as provided.</p>
+      <div class="detail-columns"><section><h3>What you’ll need</h3><ul class="ingredient-list">${ingredientsFor(ingredients)}</ul></section><section><h3>Let’s make it</h3><ol class="step-list">${steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol></section></div>
+      <a class="source-link" href="${escapeHtml(mealSourceUrl(meal))}" target="_blank" rel="noopener noreferrer">${originalSourceAvailable ? "Original recipe" : "View TheMealDB source record"} <span aria-hidden="true">↗</span></a></div>`;
   } catch (error) {
     dialogContent.innerHTML = `<div class="dialog-body"><p class="eyebrow"><span></span> RECIPE BOX</p><h2 id="dialog-title">A small hiccup</h2><p>${escapeHtml(error.message)}</p></div>`;
   }
